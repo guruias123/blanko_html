@@ -163,20 +163,83 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
     
     let currentTestimonial = 0;
+    let autoRotateInterval;
+    let isTransitioning = false;
     
     if (paginationDots.length > 0) {
+        // Pagination dot clicks
         paginationDots.forEach((dot, index) => {
             dot.addEventListener('click', function() {
-                currentTestimonial = index;
-                updateTestimonial();
+                if (!isTransitioning) {
+                    currentTestimonial = index;
+                    updateTestimonial();
+                    restartAutoRotation();
+                }
             });
         });
         
-        // Auto-rotate testimonials
-        setInterval(() => {
-            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
-            updateTestimonial();
-        }, 5000);
+        // Auto-rotate testimonials with better control
+        function startAutoRotation() {
+            autoRotateInterval = setInterval(() => {
+                if (!isTransitioning) {
+                    currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+                    updateTestimonial();
+                }
+            }, 6000);
+        }
+        
+        function restartAutoRotation() {
+            clearInterval(autoRotateInterval);
+            startAutoRotation();
+        }
+        
+        // Touch/Swipe functionality for mobile
+        const testimonialSection = document.querySelector('.testimonial');
+        let startX = 0;
+        let endX = 0;
+        
+        if (testimonialSection) {
+            testimonialSection.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+            
+            testimonialSection.addEventListener('touchmove', (e) => {
+                endX = e.touches[0].clientX;
+            }, { passive: true });
+            
+            testimonialSection.addEventListener('touchend', () => {
+                if (!isTransitioning) {
+                    const deltaX = startX - endX;
+                    const minSwipeDistance = 50;
+                    
+                    if (Math.abs(deltaX) > minSwipeDistance) {
+                        if (deltaX > 0) {
+                            // Swipe left - next testimonial
+                            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+                        } else {
+                            // Swipe right - previous testimonial
+                            currentTestimonial = currentTestimonial === 0 ? testimonials.length - 1 : currentTestimonial - 1;
+                        }
+                        updateTestimonial();
+                        restartAutoRotation();
+                    }
+                }
+            }, { passive: true });
+        }
+        
+        // Pause auto-rotation on hover (desktop)
+        if (testimonialSection) {
+            testimonialSection.addEventListener('mouseenter', () => {
+                clearInterval(autoRotateInterval);
+            });
+            
+            testimonialSection.addEventListener('mouseleave', () => {
+                startAutoRotation();
+            });
+        }
+        
+        // Start initial auto-rotation
+        startAutoRotation();
     }
     
     function updateTestimonial() {
@@ -184,25 +247,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const testimonialQuote = document.querySelector('.testimonial__quote');
         const testimonialAuthor = document.querySelector('.testimonial__author strong');
         const testimonialTitle = document.querySelector('.testimonial__author span');
+        const content = document.querySelector('.testimonial__content');
         
-        if (testimonialQuote && testimonials[currentTestimonial]) {
-            // Add fade out effect
-            const content = document.querySelector('.testimonial__content');
-            content.style.opacity = '0.5';
+        if (testimonialQuote && testimonials[currentTestimonial] && content && !isTransitioning) {
+            isTransitioning = true;
+            
+            // Add smooth fade out with transform
+            content.style.opacity = '0';
+            content.style.transform = 'translateY(15px)';
             
             setTimeout(() => {
+                // Update content
                 testimonialQuote.textContent = `"${testimonials[currentTestimonial].quote}"`;
                 testimonialAuthor.textContent = testimonials[currentTestimonial].author;
                 testimonialTitle.textContent = testimonials[currentTestimonial].title;
                 
-                // Update active dot
+                // Update active dot with smooth animation
                 paginationDots.forEach((dot, index) => {
-                    dot.classList.toggle('active', index === currentTestimonial);
+                    if (index === currentTestimonial) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
                 });
                 
-                // Fade back in
-                content.style.opacity = '1';
-            }, 200);
+                // Smooth fade back in with transform reset
+                setTimeout(() => {
+                    content.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                    
+                    // Release transition lock
+                    setTimeout(() => {
+                        isTransitioning = false;
+                    }, 100);
+                }, 50);
+            }, 250);
         }
     }
     
