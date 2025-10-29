@@ -280,7 +280,7 @@ button {
 /* Hero Section */
 .hero {
     /* padding: calc(var(--spacing-4xl) + 60px) 0 var(--spacing-4xl); */
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background: #FF7143;
     overflow: hidden;
     position: relative;
 }
@@ -1762,7 +1762,7 @@ img.lazy.loaded {
         top: 65px;
         left: 0;
         right: 0;
-        height: calc(100vh - 70px);
+        height: 100vh;
         /* padding: var(--spacing-2xl); */
         display: flex;
         flex-direction: column;
